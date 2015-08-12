@@ -52,14 +52,12 @@ function run(db) {
 					.map(function(d){
 						return d.trim();
 					}).forEach(function(d){
-						var notes;
+						var notes = null;
 						if (i === 0){
 							notes = d.match(/\((.*)\)/);
-							if (notes[1] !== 'except WA') {
-								data[3].push((notes)?notes[1]:null);
-							}
+							data[3].push((notes && notes[1] !== 'except WA') ? notes[1] : null);
 						}
-						if (notes[1] === 'except WA') {
+						if (notes && notes[1] === 'except WA') {
 							data[i].push(d.replace(/\s\(.*/,'').replace('Australia','NT,QLD,NSW,ACT,VIC,SA,TAS'));
 						} else {
 							data[i].push(d.replace(/\s\(.*/,'').replace('Australia','WA,NT,QLD,NSW,ACT,VIC,SA,TAS'));
