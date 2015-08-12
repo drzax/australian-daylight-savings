@@ -3,27 +3,25 @@
 var cheerio = require("cheerio");
 var request = require("request");
 var sqlite3 = require("sqlite3").verbose();
+var moment = require('moment');
+
+const timezones = {
+	'WA': '+0800',
+	'NT': '+0930',
+	'SA': '+0930',
+	'QLD': '+1000',
+	'NSW': '+1000',
+	'VIC': '+1000',
+	'TAS': '+1000',
+	'ACT': '+1000'
+};
 
 function initDatabase(callback) {
 	// Set up sqlite database.
 	var db = new sqlite3.Database("data.sqlite");
 	db.serialize(function() {
-		db.run("CREATE TABLE IF NOT EXISTS data (name TEXT)");
+		db.run("CREATE TABLE IF NOT EXISTS data (location TEXT, start TEXT, end TEXT, notes TEXT)");
 		callback(db);
-	});
-}
-
-function updateRow(db, value) {
-	// Insert some data.
-	var statement = db.prepare("INSERT INTO data VALUES (?)");
-	statement.run(value);
-	statement.finalize();
-}
-
-function readRows(db) {
-	// Read some data.
-	db.each("SELECT rowid AS id, name FROM data", function(err, row) {
-		console.log(row.id + ": " + row.name);
 	});
 }
 
@@ -41,16 +39,38 @@ function fetchPage(url, callback) {
 
 function run(db) {
 	// Use request to read in pages.
-	fetchPage("https://morph.io", function (body) {
+	fetchPage("http://www.bom.gov.au/climate/averages/tables/dst_times.shtml", function (body) {
 		// Use cheerio to find things in the page with css selectors.
 		var $ = cheerio.load(body);
+		var data = [[],[],[],[]];
+		var rows = $('table[summary="daylight saving implementation dates"] tbody tr').each(function () {
 
-		var elements = $("div.media-body span.p-name").each(function () {
-			var value = $(this).text().trim();
-			updateRow(db, value);
+			$(this).find('td').each(function(i){
+				var rows = $(this).html().split('<br>')
+					.map(function(d){
+						return d.trim();
+					}).forEach(function(d){
+						if (i === 0){
+							var notes = d.match(/\((.*)\)/);
+							data[3].push((notes)?notes[1]:null);
+						}
+						data[i].push(d.replace(/\s\(.*/,'').replace('Australia','WA,NT,QLD,NSW,ACT,VIC,SA,TAS'));
+					});
+			});
+			// updateRow(db, value);
 		});
-
-		readRows(db);
+		console.log(data);
+		data[0].forEach(function(d,i){
+			d.split(',').forEach(function(l){
+				l = l.trim();
+				db.run('INSERT INTO data (location, start, end, notes) VALUES ($location,$start,$end,$notes)', {
+					$location: l,
+					$start: moment(data[1][i]+' 02:00 '+timezones[l], 'D/M/YYYY HH:mm ZZ').toISOString(),
+					$end: moment(data[2][i]+' 03:00 '+timezones[l], 'D/M/YYYY HH:mm ZZ').toISOString(),
+					$notes: data[3][i]
+				});
+			});
+		});
 
 		db.close();
 	});

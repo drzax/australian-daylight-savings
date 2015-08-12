@@ -1,7 +1,11 @@
 {
-	"dependencies": {
-		"cheerio": "latest",
-		"request": "latest",
-		"sqlite3": "latest"
-	}
+  "name": "australian-daylight-savings-scraper",
+  "version": "1.0.0",
+  "dependencies": {
+    "cheerio": "latest",
+    "moment": "^2.10.6",
+    "moment-timezone": "^0.4.0",
+    "request": "latest",
+    "sqlite3": "latest"
+  }
 }
