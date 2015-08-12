@@ -50,11 +50,18 @@ function run(db) {
 					.map(function(d){
 						return d.trim();
 					}).forEach(function(d){
+						var notes;
 						if (i === 0){
-							var notes = d.match(/\((.*)\)/);
-							data[3].push((notes)?notes[1]:null);
+							notes = d.match(/\((.*)\)/);
+							if (notes[1] !== 'except WA') {
+								data[3].push((notes)?notes[1]:null);
+							}
 						}
-						data[i].push(d.replace(/\s\(.*/,'').replace('Australia','WA,NT,QLD,NSW,ACT,VIC,SA,TAS'));
+						if (notes[1] === 'except WA') {
+							data[i].push(d.replace(/\s\(.*/,'').replace('Australia','NT,QLD,NSW,ACT,VIC,SA,TAS'));
+						} else {
+							data[i].push(d.replace(/\s\(.*/,'').replace('Australia','WA,NT,QLD,NSW,ACT,VIC,SA,TAS'));
+						}
 					});
 			});
 			// updateRow(db, value);
